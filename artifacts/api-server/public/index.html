@@ -650,8 +650,10 @@
 
     .chart-iframe-wrap {
       position: relative;
-      height: 240px;
+      height: 480px;
       background: var(--bg);
+      display: flex;
+      justify-content: center;
     }
 
     body:root .chart-iframe-wrap::after,
@@ -687,7 +689,7 @@
     body.theme-clean-tech .chart-corner { display: none; }
 
     #dex-iframe {
-      width: 100%;
+      width: 50%;
       height: 100%;
       border: none;
       display: block;
@@ -770,7 +772,7 @@
       <div class="stat-card">
         <div class="stat-label">Holders</div>
         <div class="stat-value" id="stat-holders">—</div>
-        <div class="stat-sub">Estimated holders</div>
+        <div class="stat-sub">24h Transactions</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Market Cap</div>
@@ -825,7 +827,7 @@
           <div class="trade-count" id="trade-count">0 trades</div>
         </div>
         <div id="trade-list">
-          <div class="no-trades" id="no-trades">Waiting for trades…</div>
+          <div class="no-trades" id="no-trades">Awaiting real blockchain trades…</div>
         </div>
       </div>
 
@@ -919,17 +921,30 @@
 
     function applyDynamicColor(h, s, l) {
       const root = document.documentElement;
-      // Clamp saturation and lightness for usable accent colors
-      const sClamped = Math.max(60, Math.min(s, 100));
-      const lPrimary = Math.max(50, Math.min(65, l + 15));
-      const lBorder = Math.max(35, Math.min(55, l));
 
+      // Clamp values for usable accent colors
+      // Hue is kept as-is (0-360)
+      // Saturation: ensure good colorfulness (50-100%)
+      // Lightness: ensure visibility on dark backgrounds (45-70%)
+      const sClamped = Math.max(50, Math.min(100, s));
+      const lPrimary = Math.max(45, Math.min(70, l + 10));
+      const lSecondary = Math.max(35, Math.min(55, l));
+
+      // Apply derived CSS custom properties
       root.style.setProperty('--primary', `hsl(${h}, ${sClamped}%, ${lPrimary}%)`);
-      root.style.setProperty('--border', `hsla(${h}, ${sClamped}%, ${lBorder}%, 0.3)`);
-      root.style.setProperty('--border-glow', `hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.6)`);
-      root.style.setProperty('--glow', `0 0 8px hsl(${h}, ${sClamped}%, ${lPrimary}%), 0 0 20px hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.25)`);
-      root.style.setProperty('--shadow', `0 0 30px hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.15)`);
+      root.style.setProperty('--border', `hsla(${h}, ${sClamped}%, ${lSecondary}%, 0.25)`);
+      root.style.setProperty('--border-glow', `hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.55)`);
+      root.style.setProperty('--glow', `0 0 8px hsl(${h}, ${sClamped}%, ${lPrimary}%), 0 0 20px hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.22)`);
+      root.style.setProperty('--shadow', `0 0 30px hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.12)`);
       root.style.setProperty('--scanner-color', `hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.04)`);
+
+      // Also update accent colors for better coherence
+      const accentL = Math.max(50, Math.min(75, l + 20));
+      root.style.setProperty('--accent', `hsl(${h}, ${sClamped}%, ${accentL}%)`);
+
+      // Update text colors slightly tinted toward the primary hue
+      const textTint = Math.max(75, Math.min(92, l + 30));
+      root.style.setProperty('--text', `hsl(${h}, ${Math.max(20, sClamped - 30)}%, ${textTint}%)`);
     }
 
     function extractDominantColor(imageUrl) {
@@ -939,31 +954,75 @@
       img.onload = () => {
         try {
           const canvas = document.createElement('canvas');
-          const size = 40;
+          const size = 60;
           canvas.width = size;
           canvas.height = size;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, size, size);
           const data = ctx.getImageData(0, 0, size, size).data;
 
-          // Find the most saturated pixel cluster
-          let bestH = 180, bestS = 70, bestL = 55;
-          let maxSat = 0;
+          // Collect saturated pixels and group by hue
+          const hueGroups = {};
+          let totalR = 0, totalG = 0, totalB = 0, count = 0;
+
           for (let i = 0; i < data.length; i += 4) {
             const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
-            if (a < 128) continue;
+            if (a < 200) continue; // Skip transparent pixels
+
+            // Accumulate for overall average
+            totalR += r; totalG += g; totalB += b; count++;
+
             const [h, s, l] = rgbToHsl(r, g, b);
-            if (s > maxSat && l > 15 && l < 85) {
-              maxSat = s;
-              bestH = h; bestS = s; bestL = l;
+
+            // Only consider saturated pixels (saturation > 30%)
+            if (s > 30 && l > 20 && l < 80) {
+              const hueBin = Math.round(h / 20) * 20; // Group into 20-degree bins
+              if (!hueGroups[hueBin]) hueGroups[hueBin] = { hSum: 0, sSum: 0, lSum: 0, pixels: [] };
+              hueGroups[hueBin].hSum += h;
+              hueGroups[hueBin].sSum += s;
+              hueGroups[hueBin].lSum += l;
+              hueGroups[hueBin].pixels.push([r, g, b]);
             }
           }
-          if (maxSat > 20) {
-            applyDynamicColor(bestH, bestS, bestL);
+
+          // Find the largest hue group with highest saturation
+          let bestH = 180, bestS = 70, bestL = 55;
+          let bestScore = 0;
+
+          for (const bin in hueGroups) {
+            const group = hueGroups[bin];
+            const n = group.pixels.length;
+            if (n < 5) continue; // Need at least some pixels
+
+            const avgS = group.sSum / n;
+            const avgH = group.hSum / n;
+            const avgL = group.lSum / n;
+
+            // Score by pixel count * saturation
+            const score = n * avgS;
+            if (score > bestScore) {
+              bestScore = score;
+              bestH = Math.round(avgH);
+              bestS = Math.round(avgS);
+              bestL = Math.round(avgL);
+            }
           }
+
+          // If no good saturated color found, use average of image
+          if (bestScore < 100 && count > 0) {
+            const avgR = totalR / count, avgG = totalG / count, avgB = totalB / count;
+            [bestH, bestS, bestL] = rgbToHsl(avgR, avgG, avgB);
+            // Boost saturation for the accent
+            bestS = Math.max(50, bestS);
+          }
+
+          applyDynamicColor(bestH, bestS, bestL);
         } catch (_) {
           // CORS or canvas tainted — silently ignore
         }
+      };
+      img.onerror = () => {
+        // Image failed to load — keep default colors
       };
       img.src = imageUrl;
     }
@@ -1102,7 +1161,7 @@
         row.innerHTML =
           '<span class="trade-type ' + trade.type + '">' + trade.type.toUpperCase() + '</span>' +
           '<span class="trade-wallet">' + trade.wallet + '</span>' +
-          '<span class="trade-sol ' + trade.type + '">' + trade.solAmount.toFixed(3) + ' SOL</span>' +
+          '<span class="trade-sol ' + trade.type + '">' + trade.solAmount.toFixed(4) + ' SOL</span>' +
           '<span class="trade-tokens">' + fmtNum(trade.tokenAmount) + ' T</span>' +
           '<span class="trade-time">' + trade.timeStr + '</span>';
         fragment.appendChild(row);
@@ -1124,12 +1183,12 @@
         else { sellVol += t.solAmount; sellCount++; }
       });
 
-      document.getElementById('vol-buy').textContent = buyVol.toFixed(3) + ' SOL';
-      document.getElementById('vol-sell').textContent = sellVol.toFixed(3) + ' SOL';
+      document.getElementById('vol-buy').textContent = buyVol.toFixed(4) + ' SOL';
+      document.getElementById('vol-sell').textContent = sellVol.toFixed(4) + ' SOL';
 
       const net = buyVol - sellVol;
       const netEl = document.getElementById('vol-net');
-      netEl.textContent = (net >= 0 ? '+' : '') + net.toFixed(3) + ' SOL';
+      netEl.textContent = (net >= 0 ? '+' : '') + net.toFixed(4) + ' SOL';
       netEl.style.color = net >= 0 ? 'var(--buy)' : 'var(--sell)';
 
       document.getElementById('vol-count').textContent = trades.length + ' trades';

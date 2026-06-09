@@ -55,51 +55,7 @@ let latestData: TelemetryData = {
 
 const clients = new Set<Response>();
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
-let tradeSimInterval: ReturnType<typeof setInterval> | null = null;
 const tradeHistory: TradeEntry[] = [];
-let lastTradeTime = 0;
-
-const BASE58_CHARS = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-function randomWallet(): string {
-  const rand = (len: number) =>
-    Array.from(
-      { length: len },
-      () => BASE58_CHARS[Math.floor(Math.random() * BASE58_CHARS.length)],
-    ).join("");
-  return `${rand(4)}…${rand(4)}`;
-}
-
-function randomId(): string {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
-function estimateHolders(usdMarketCap: number): number {
-  const estimate = Math.round(Math.sqrt(usdMarketCap) * 2.2);
-  return Math.max(50, estimate);
-}
-
-function simulateTrade(): TradeEntry {
-  const mc = latestData.usdMarketCap ?? 100_000;
-  const isBuy = Math.random() > 0.45;
-  const scale = Math.max(0.005, Math.sqrt(mc / 1_000_000) * 0.4);
-  const solAmount = parseFloat(
-    (Math.random() * scale * 3 + 0.005).toFixed(4),
-  );
-  const price = latestData.price ?? 0.00001;
-  const solPrice = 155;
-  const tokenAmount = Math.round((solAmount * solPrice) / price);
-  const now = Date.now();
-  const date = new Date(now);
-  return {
-    id: randomId(),
-    type: isBuy ? "buy" : "sell",
-    solAmount,
-    tokenAmount,
-    wallet: randomWallet(),
-    timestamp: now,
-    timeStr: date.toLocaleTimeString("en-US", { hour12: false }),
-  };
-}
 
 export function addClient(res: Response): void {
   clients.add(res);
@@ -198,72 +154,28 @@ async function fetchDexscreener(
     if (priceUsd > 0) partial.price = priceUsd;
     if (fdv) {
       partial.usdMarketCap = fdv;
-      partial.holders = estimateHolders(fdv);
-      const GRAD_MC = 69_000;
+      const GRAD_MC = 24_000;
       partial.bondingProgress = Math.min(
         100,
         Math.round((fdv / GRAD_MC) * 100),
       );
     }
     if (baseToken?.symbol) partial.symbol = String(baseToken.symbol);
+    if (pair.txns) {
+      const txns = pair.txns as Record<string, unknown>;
+      const h24 = txns.h24 as Record<string, unknown> | undefined;
+      if (h24?.buys && h24?.sells) {
+        const buys = h24.buys as number;
+        const sells = h24.sells as number;
+        partial.holders = buys + sells;
+      }
+    }
   } catch (err) {
     logger.warn({ err }, "Dexscreener fetch failed — using cached data");
   }
   return partial;
 }
 
-function seedInitialTrades(): void {
-  if (tradeHistory.length > 0) return;
-  const mc = latestData.usdMarketCap;
-  if (!mc) return;
-  const now = Date.now();
-  for (let i = 0; i < 25; i++) {
-    const isBuy = Math.random() > 0.4;
-    const scale = Math.max(0.005, Math.sqrt(mc / 1_000_000) * 0.4);
-    const solAmount = parseFloat(
-      (Math.random() * scale * 3 + 0.005).toFixed(4),
-    );
-    const price = latestData.price ?? 0.00001;
-    const solPrice = 155;
-    const tokenAmount = Math.round((solAmount * solPrice) / price);
-    const ts = now - i * 14000 - Math.floor(Math.random() * 10000);
-    const date = new Date(ts);
-    tradeHistory.push({
-      id: randomId(),
-      type: isBuy ? "buy" : "sell",
-      solAmount,
-      tokenAmount,
-      wallet: randomWallet(),
-      timestamp: ts,
-      timeStr: date.toLocaleTimeString("en-US", { hour12: false }),
-    });
-  }
-  tradeHistory.sort((a, b) => b.timestamp - a.timestamp);
-}
-
-function startTradeSimulation(): void {
-  if (tradeSimInterval) clearInterval(tradeSimInterval);
-  tradeSimInterval = setInterval(
-    () => {
-      if (!latestData.usdMarketCap || clients.size === 0) return;
-      const now = Date.now();
-      if (now - lastTradeTime < 700) return;
-      lastTradeTime = now;
-
-      const trade = simulateTrade();
-      tradeHistory.unshift(trade);
-      if (tradeHistory.length > 100) tradeHistory.splice(80);
-
-      latestData = {
-        ...latestData,
-        trades: [...tradeHistory],
-        lastUpdated: Date.now(),
-      };
-      broadcast({ type: "update", data: latestData });
-    },
-    1000 + Math.random() * 1000,
-  );
-}
 
 async function poll(): Promise<void> {
   const mint = currentConfig.mintAddress;
@@ -279,16 +191,7 @@ async function poll(): Promise<void> {
       lastUpdated: Date.now(),
     };
 
-    seedInitialTrades();
-
-    if (dexData.holders != null || dexData.usdMarketCap != null) {
-      broadcast({ type: "update", data: latestData });
-    } else {
-      broadcast({
-        type: "update",
-        data: { ...latestData, lastUpdated: Date.now() },
-      });
-    }
+    broadcast({ type: "update", data: latestData });
   } catch (err) {
     logger.warn({ err }, "Poll failed — broadcasting last known data");
     broadcast({
@@ -307,6 +210,5 @@ export function startPolling(): void {
   pollingInterval = setInterval(() => {
     poll().catch(() => {});
   }, 6000);
-  startTradeSimulation();
   logger.info({ mint: currentConfig.mintAddress }, "Polling started via Dexscreener");
 }
