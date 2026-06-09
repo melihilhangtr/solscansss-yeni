@@ -120,6 +120,22 @@ export function getLatestData(): TelemetryData {
   return latestData;
 }
 
+async function fetchPumpFunHolders(mintAddress: string): Promise<number | null> {
+  try {
+    const resp = await axios.get(
+      `https://frontend-api.pump.fun/coins/${mintAddress}`,
+      { timeout: 8000 },
+    );
+    const data = resp.data as Record<string, unknown>;
+    if (data.holders != null) {
+      return typeof data.holders === 'number' ? data.holders : parseInt(String(data.holders), 10);
+    }
+  } catch (err) {
+    logger.warn({ err }, "Pump.fun holders fetch failed");
+  }
+  return null;
+}
+
 async function fetchDexscreener(
   mintAddress: string,
 ): Promise<Partial<TelemetryData>> {
@@ -161,15 +177,6 @@ async function fetchDexscreener(
       );
     }
     if (baseToken?.symbol) partial.symbol = String(baseToken.symbol);
-    if (pair.txns) {
-      const txns = pair.txns as Record<string, unknown>;
-      const h24 = txns.h24 as Record<string, unknown> | undefined;
-      if (h24?.buys && h24?.sells) {
-        const buys = h24.buys as number;
-        const sells = h24.sells as number;
-        partial.holders = buys + sells;
-      }
-    }
   } catch (err) {
     logger.warn({ err }, "Dexscreener fetch failed — using cached data");
   }
@@ -182,11 +189,15 @@ async function poll(): Promise<void> {
   if (!mint) return;
 
   try {
-    const dexData = await fetchDexscreener(mint);
+    const [dexData, holders] = await Promise.all([
+      fetchDexscreener(mint),
+      fetchPumpFunHolders(mint),
+    ]);
 
     latestData = {
       ...latestData,
       ...dexData,
+      holders: holders ?? latestData.holders,
       trades: latestData.trades,
       lastUpdated: Date.now(),
     };
