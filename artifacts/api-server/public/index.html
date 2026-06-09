@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Token Telemetry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #03030a;
+      --bg-card: #080814;
+      --bg-card2: #0c0c1c;
+      --primary: #00f5ff;
+      --secondary: #ff00ff;
+      --accent: #39ff14;
+      --text: #c0e8ff;
+      --text-dim: #5070a0;
+      --border: rgba(0,245,255,0.18);
+      --border-glow: rgba(0,245,255,0.5);
+      --buy: #39ff14;
+      --sell: #ff0055;
+      --buy-bg: rgba(57,255,20,0.08);
+      --sell-bg: rgba(255,0,85,0.08);
+      --shadow: 0 0 30px rgba(0,245,255,0.1);
+      --font: 'Share Tech Mono', 'Courier New', monospace;
+      --font-num: 'Share Tech Mono', monospace;
+      --radius: 3px;
+      --radius-lg: 5px;
+      --glow: 0 0 8px var(--primary), 0 0 20px rgba(0,245,255,0.25);
+      --glow-buy: 0 0 8px rgba(57,255,20,0.6);
+      --glow-sell: 0 0 8px rgba(255,0,85,0.6);
+      --scanner-color: rgba(0,245,255,0.04);
+    }
+
+    body.theme-clean-tech {
+      --bg: #0c1019;
+      --bg-card: #131a27;
+      --bg-card2: #192133;
+      --primary: #3b82f6;
+      --secondary: #06b6d4;
+      --accent: #a78bfa;
+      --text: #dde6f5;
+      --text-dim: #566a8a;
+      --border: rgba(59,130,246,0.2);
+      --border-glow: rgba(59,130,246,0.5);
+      --buy: #22c55e;
+      --sell: #ef4444;
+      --buy-bg: rgba(34,197,94,0.08);
+      --sell-bg: rgba(239,68,68,0.08);
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      --font: 'Inter', -apple-system, sans-serif;
+      --font-num: 'Inter', monospace;
+      --radius: 10px;
+      --radius-lg: 16px;
+      --glow: none;
+      --glow-buy: none;
+      --glow-sell: none;
+      --scanner-color: transparent;
+    }
+
+    body.theme-gold {
+      --bg: #060503;
+      --bg-card: #0e0b06;
+      --bg-card2: #14100a;
+      --primary: #e8b400;
+      --secondary: #b8860b;
+      --accent: #ff8c00;
+      --text: #f0e0b0;
+      --text-dim: #7a6040;
+      --border: rgba(232,180,0,0.18);
+      --border-glow: rgba(232,180,0,0.45);
+      --buy: #00e676;
+      --sell: #ff1744;
+      --buy-bg: rgba(0,230,118,0.08);
+      --sell-bg: rgba(255,23,68,0.08);
+      --shadow: 0 0 40px rgba(232,180,0,0.07);
+      --font: 'Playfair Display', Georgia, serif;
+      --font-num: 'Inter', monospace;
+      --radius: 4px;
+      --radius-lg: 8px;
+      --glow: 0 0 12px rgba(232,180,0,0.3);
+      --glow-buy: none;
+      --glow-sell: none;
+      --scanner-color: rgba(232,180,0,0.025);
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow-x: hidden;
+      transition: background-color 0.5s, color 0.5s;
+    }
+
+    #bg-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.12;
+      transition: opacity 0.6s, background-image 0.6s;
+      pointer-events: none;
+    }
+
+    #grid-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(var(--scanner-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--scanner-color) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--bg-card) 0%, transparent 100%);
+      backdrop-filter: blur(8px);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    /* ── LARGE COIN LOGO ── */
+    #token-logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 3px solid var(--border);
+      object-fit: cover;
+      background: var(--bg-card2);
+      transition: border-color 0.4s, box-shadow 0.4s;
+      flex-shrink: 0;
+    }
+
+    body:not(.theme-clean-tech) #token-logo {
+      box-shadow: var(--glow);
+    }
+
+    .token-info h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: var(--glow);
+      transition: color 0.4s;
+    }
+
+    .token-info .token-mint {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+      letter-spacing: 0.03em;
+      margin-top: 2px;
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      background: var(--bg-card);
+    }
+
+    .badge.live {
+      color: var(--accent);
+      border-color: var(--accent);
+      animation: pulse-border 2s infinite;
+    }
+
+    body.theme-clean-tech .badge.live { animation: none; }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+
+    .admin-link {
+      padding: 7px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--bg-card);
+      transition: all 0.25s;
+      font-family: var(--font);
+    }
+    .admin-link:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: var(--glow);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 24px 32px 0;
+    }
+
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      header { padding: 14px 16px; }
+      .stats-grid { padding: 16px 16px 0; }
+      #token-logo { width: 72px; height: 72px; }
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0.4;
+      transition: opacity 0.3s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-glow);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: var(--font-num);
+      letter-spacing: 0.02em;
+      transition: color 0.4s;
+      text-shadow: var(--glow);
+      line-height: 1;
+    }
+
+    body.theme-clean-tech .stat-value { text-shadow: none; }
+
+    .stat-sub {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    .bonding-bar {
+      height: 4px;
+      background: var(--bg-card2);
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .bonding-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+      border-radius: 2px;
+      transition: width 1s ease;
+      box-shadow: 0 0 8px var(--primary);
+    }
+
+    body.theme-clean-tech .bonding-fill { box-shadow: none; }
+
+    .main-content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 16px;
+      padding: 16px 32px 32px;
+    }
+
+    @media (max-width: 1100px) {
+      .main-content { grid-template-columns: 1fr; }
+    }
+
+    .trade-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card2);
+    }
+
+    .panel-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title .live-dot { background: var(--buy); }
+
+    .trade-count {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    #trade-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 520px;
+      padding: 6px 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    #trade-list::-webkit-scrollbar { width: 4px; }
+    #trade-list::-webkit-scrollbar-track { background: transparent; }
+    #trade-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .trade-row {
+      display: grid;
+      grid-template-columns: 52px 1fr 90px 80px 60px;
+      align-items: center;
+      padding: 8px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      gap: 8px;
+      animation: slideIn 0.35s ease-out;
+      transition: background 0.2s;
+    }
+
+    .trade-row.new { background: var(--bg-card2); }
+    .trade-row.new.is-buy { background: var(--buy-bg); }
+    .trade-row.new.is-sell { background: var(--sell-bg); }
+    .trade-row:hover { background: var(--bg-card2); }
+
+    .trade-type {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 3px 7px;
+      border-radius: var(--radius);
+      text-align: center;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .trade-type.buy {
+      color: var(--buy);
+      background: var(--buy-bg);
+      border: 1px solid rgba(57,255,20,0.25);
+      text-shadow: var(--glow-buy);
+    }
+
+    .trade-type.sell {
+      color: var(--sell);
+      background: var(--sell-bg);
+      border: 1px solid rgba(255,0,85,0.25);
+      text-shadow: var(--glow-sell);
+    }
+
+    .trade-wallet {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .trade-sol {
+      font-family: var(--font-num);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .trade-sol.buy { color: var(--buy); }
+    .trade-sol.sell { color: var(--sell); }
+
+    .trade-tokens {
+      font-family: var(--font-num);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    .trade-time {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    .no-trades {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .info-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    .info-card h3 {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+
+    .info-key {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+
+    .info-val {
+      font-family: var(--font-num);
+      font-size: 0.78rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .buy-sell-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    .buy-sell-bar h3 {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+
+    .ratio-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--bg-card2);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .ratio-fill-buy {
+      height: 100%;
+      background: var(--buy);
+      border-radius: 4px 0 0 4px;
+      transition: width 0.8s ease;
+      box-shadow: var(--glow-buy);
+    }
+
+    .ratio-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+    }
+
+    .ratio-buy { color: var(--buy); }
+    .ratio-sell { color: var(--sell); }
+
+    .status-bar {
+      padding: 8px 32px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+      letter-spacing: 0.08em;
+      background: var(--bg-card);
+    }
+
+    #connection-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .conn-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      transition: background 0.3s;
+    }
+
+    .conn-dot.connected { background: var(--buy); }
+    .conn-dot.error { background: var(--sell); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: var(--accent); box-shadow: none; }
+      50%       { border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    }
+
+    @keyframes countUp {
+      from { opacity: 0.4; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .updated { animation: countUp 0.4s ease-out; }
+
+    /* ── CHART — HALF HEIGHT (240px) ── */
+    .chart-section {
+      padding: 0 32px 16px;
+    }
+
+    .chart-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color 0.4s, box-shadow 0.4s;
+    }
+
+    body:not(.theme-clean-tech) .chart-panel {
+      box-shadow: var(--shadow);
+    }
+
+    .chart-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card2);
+    }
+
+    .chart-panel-header .panel-title { gap: 8px; }
+    .chart-panel-header .panel-title .live-dot { background: var(--primary); animation: blink 1.8s ease-in-out infinite; }
+
+    .chart-ext-link {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'Share Tech Mono', monospace;
+      transition: all 0.2s;
+    }
+    .chart-ext-link:hover {
+      color: var(--primary);
+      border-color: var(--border-glow);
+      box-shadow: var(--glow);
+    }
+
+    .chart-iframe-wrap {
+      position: relative;
+      height: 240px;
+      background: var(--bg);
+    }
+
+    body:root .chart-iframe-wrap::after,
+    body.theme-cyberpunk .chart-iframe-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,245,255,0.012) 3px,
+        rgba(0,245,255,0.012) 4px
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+    body.theme-clean-tech .chart-iframe-wrap::after,
+    body.theme-gold .chart-iframe-wrap::after { display: none; }
+
+    .chart-corner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      z-index: 3;
+      pointer-events: none;
+      transition: border-color 0.4s;
+    }
+    .chart-corner.tl { top: 0; left: 0; border-top: 2px solid var(--primary); border-left: 2px solid var(--primary); }
+    .chart-corner.tr { top: 0; right: 0; border-top: 2px solid var(--primary); border-right: 2px solid var(--primary); }
+    .chart-corner.bl { bottom: 0; left: 0; border-bottom: 2px solid var(--primary); border-left: 2px solid var(--primary); }
+    .chart-corner.br { bottom: 0; right: 0; border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary); }
+    body.theme-clean-tech .chart-corner { display: none; }
+
+    #dex-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chart-loading {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background: var(--bg-card);
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+
+    .chart-loading.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .chart-loading-spinner {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .chart-loading-text {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    #symbol-badge {
+      font-size: 0.72rem;
+      color: var(--primary);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: var(--radius);
+      font-family: 'Share Tech Mono', monospace;
+      background: var(--bg-card);
+    }
+  </style>
+</head>
+<body>
+  <div id="bg-layer"></div>
+  <div id="grid-layer"></div>
+
+  <div id="app">
+    <header>
+      <div class="header-left">
+        <img id="token-logo" src="" alt="Token Logo" />
+        <div class="token-info">
+          <h1 id="token-name">LOADING…</h1>
+          <div class="token-mint" id="token-mint">—</div>
+          <span id="symbol-badge">$—</span>
+        </div>
+      </div>
+      <div class="header-badges">
+        <div class="badge live">
+          <div class="live-dot"></div>
+          LIVE
+        </div>
+        <a href="/api/admin.html" class="admin-link">⚙ ADMIN</a>
+      </div>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Holders</div>
+        <div class="stat-value" id="stat-holders">—</div>
+        <div class="stat-sub">Estimated holders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Market Cap</div>
+        <div class="stat-value" id="stat-mcap">—</div>
+        <div class="stat-sub" id="stat-mcap-sub">USD via Dexscreener</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Price</div>
+        <div class="stat-value" id="stat-price">—</div>
+        <div class="stat-sub">USD per token</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Bonding</div>
+        <div class="stat-value" id="stat-bond">—</div>
+        <div class="stat-sub">To graduation</div>
+        <div class="bonding-bar">
+          <div class="bonding-fill" id="bond-fill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-panel">
+        <div class="chart-panel-header">
+          <div class="panel-title">
+            <div class="live-dot"></div>
+            DEX CHART
+          </div>
+          <a id="dex-link" href="#" target="_blank" class="chart-ext-link">↗ DEXSCREENER</a>
+        </div>
+        <div class="chart-iframe-wrap">
+          <div class="chart-corner tl"></div>
+          <div class="chart-corner tr"></div>
+          <div class="chart-corner bl"></div>
+          <div class="chart-corner br"></div>
+          <div class="chart-loading" id="chart-loading">
+            <div class="chart-loading-spinner"></div>
+            <div class="chart-loading-text">Loading chart…</div>
+          </div>
+          <iframe id="dex-iframe" src="" title="Dexscreener Chart" allowtransparency="true"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="trade-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <div class="live-dot"></div>
+            LIVE TRADE STREAM
+          </div>
+          <div class="trade-count" id="trade-count">0 trades</div>
+        </div>
+        <div id="trade-list">
+          <div class="no-trades" id="no-trades">Waiting for trades…</div>
+        </div>
+      </div>
+
+      <div class="side-panel">
+        <div class="info-card">
+          <h3>Token Info</h3>
+          <div class="info-row">
+            <span class="info-key">Name</span>
+            <span class="info-val" id="info-name">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Symbol</span>
+            <span class="info-val" id="info-symbol">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Last Updated</span>
+            <span class="info-val" id="info-updated">—</span>
+          </div>
+        </div>
+
+        <div class="buy-sell-bar">
+          <h3>Buy / Sell Pressure</h3>
+          <div class="ratio-bar">
+            <div class="ratio-fill-buy" id="ratio-fill" style="width:50%"></div>
+          </div>
+          <div class="ratio-labels">
+            <span class="ratio-buy">BUY <span id="ratio-buy-pct">—</span></span>
+            <span class="ratio-sell">SELL <span id="ratio-sell-pct">—</span></span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Volume (streamed)</h3>
+          <div class="info-row">
+            <span class="info-key">Buy Volume</span>
+            <span class="info-val" id="vol-buy">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Sell Volume</span>
+            <span class="info-val" id="vol-sell">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Net Flow</span>
+            <span class="info-val" id="vol-net">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Trade Count</span>
+            <span class="info-val" id="vol-count">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div id="connection-status">
+        <div class="conn-dot" id="conn-dot"></div>
+        <span id="conn-text">CONNECTING</span>
+      </div>
+      <div id="last-update-bar">LAST UPDATE: —</div>
+      <div>TOKEN TELEMETRY · POWERED BY DEXSCREENER</div>
+    </div>
+  </div>
+
+  <script>
+    let eventSource = null;
+    const knownTradeIds = new Set();
+
+    // ─── Theme ────────────────────────────────────────────────
+    function applyTheme(design) {
+      document.body.className = '';
+      if (design === 'clean-tech') document.body.classList.add('theme-clean-tech');
+      else if (design === 'gold') document.body.classList.add('theme-gold');
+    }
+
+    // ─── Dynamic Color Extraction from Background Image ───────
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+          case g: h = ((b - r) / d + 2) / 6; break;
+          case b: h = ((r - g) / d + 4) / 6; break;
+        }
+      }
+      return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+    }
+
+    function applyDynamicColor(h, s, l) {
+      const root = document.documentElement;
+      // Clamp saturation and lightness for usable accent colors
+      const sClamped = Math.max(60, Math.min(s, 100));
+      const lPrimary = Math.max(50, Math.min(65, l + 15));
+      const lBorder = Math.max(35, Math.min(55, l));
+
+      root.style.setProperty('--primary', `hsl(${h}, ${sClamped}%, ${lPrimary}%)`);
+      root.style.setProperty('--border', `hsla(${h}, ${sClamped}%, ${lBorder}%, 0.3)`);
+      root.style.setProperty('--border-glow', `hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.6)`);
+      root.style.setProperty('--glow', `0 0 8px hsl(${h}, ${sClamped}%, ${lPrimary}%), 0 0 20px hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.25)`);
+      root.style.setProperty('--shadow', `0 0 30px hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.15)`);
+      root.style.setProperty('--scanner-color', `hsla(${h}, ${sClamped}%, ${lPrimary}%, 0.04)`);
+    }
+
+    function extractDominantColor(imageUrl) {
+      if (!imageUrl) return;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const size = 40;
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, size, size);
+          const data = ctx.getImageData(0, 0, size, size).data;
+
+          // Find the most saturated pixel cluster
+          let bestH = 180, bestS = 70, bestL = 55;
+          let maxSat = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+            if (a < 128) continue;
+            const [h, s, l] = rgbToHsl(r, g, b);
+            if (s > maxSat && l > 15 && l < 85) {
+              maxSat = s;
+              bestH = h; bestS = s; bestL = l;
+            }
+          }
+          if (maxSat > 20) {
+            applyDynamicColor(bestH, bestS, bestL);
+          }
+        } catch (_) {
+          // CORS or canvas tainted — silently ignore
+        }
+      };
+      img.src = imageUrl;
+    }
+
+    // ─── Chart ────────────────────────────────────────────────
+    let currentMint = '';
+    function updateChart(mint) {
+      if (!mint || mint === currentMint) return;
+      currentMint = mint;
+      const iframe = document.getElementById('dex-iframe');
+      const loading = document.getElementById('chart-loading');
+      const link = document.getElementById('dex-link');
+      const url = `https://dexscreener.com/solana/${mint}?embed=1&loadChartSettings=0&trades=0&tabs=0&info=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15`;
+      loading.classList.remove('hidden');
+      iframe.src = url;
+      link.href = `https://dexscreener.com/solana/${mint}`;
+      iframe.onload = () => { loading.classList.add('hidden'); };
+    }
+
+    // ─── Apply Config ─────────────────────────────────────────
+    function applyConfig(cfg) {
+      document.title = (cfg.tokenName || 'Token') + ' · Telemetry';
+      document.getElementById('token-name').textContent = (cfg.tokenName || '—').toUpperCase();
+      document.getElementById('token-mint').textContent = cfg.mintAddress
+        ? cfg.mintAddress.slice(0, 8) + '…' + cfg.mintAddress.slice(-8)
+        : '—';
+      document.getElementById('info-name').textContent = cfg.tokenName || '—';
+
+      const logo = document.getElementById('token-logo');
+      if (cfg.tokenImageUrl) {
+        logo.src = cfg.tokenImageUrl;
+        logo.style.display = '';
+      } else {
+        logo.src = '';
+      }
+
+      const bg = document.getElementById('bg-layer');
+      if (cfg.backgroundImageUrl) {
+        bg.style.backgroundImage = `url("${cfg.backgroundImageUrl}")`;
+        bg.style.opacity = '0.12';
+        extractDominantColor(cfg.backgroundImageUrl);
+      } else {
+        bg.style.backgroundImage = 'none';
+        bg.style.opacity = '0';
+        // Reset custom color overrides
+        document.documentElement.style.removeProperty('--primary');
+        document.documentElement.style.removeProperty('--border');
+        document.documentElement.style.removeProperty('--border-glow');
+        document.documentElement.style.removeProperty('--glow');
+        document.documentElement.style.removeProperty('--shadow');
+        document.documentElement.style.removeProperty('--scanner-color');
+      }
+
+      if (cfg.siteDesign) applyTheme(cfg.siteDesign);
+      updateChart(cfg.mintAddress || '');
+    }
+
+    // ─── Format Helpers ───────────────────────────────────────
+    function fmtNum(n, decimals) {
+      if (n == null) return '—';
+      decimals = decimals || 0;
+      return n.toLocaleString('en-US', { maximumFractionDigits: decimals });
+    }
+
+    function fmtUSD(n) {
+      if (n == null) return '—';
+      if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+      return '$' + n.toFixed(2);
+    }
+
+    function fmtPrice(n) {
+      if (n == null) return '—';
+      if (n < 0.000001) return n.toExponential(3);
+      if (n < 0.01) return '$' + n.toFixed(8);
+      return '$' + n.toFixed(6);
+    }
+
+    function animUpdate(elId, val) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.textContent = val;
+      el.classList.remove('updated');
+      void el.offsetWidth;
+      el.classList.add('updated');
+    }
+
+    // ─── Update Stats ─────────────────────────────────────────
+    function updateStats(data) {
+      animUpdate('stat-holders', data.holders != null ? fmtNum(data.holders) : '—');
+      animUpdate('stat-mcap', fmtUSD(data.usdMarketCap));
+      animUpdate('stat-price', fmtPrice(data.price));
+      animUpdate('stat-bond', data.bondingProgress != null ? data.bondingProgress.toFixed(1) + '%' : '—');
+
+      const fill = document.getElementById('bond-fill');
+      if (fill && data.bondingProgress != null) {
+        fill.style.width = Math.min(100, data.bondingProgress) + '%';
+      }
+
+      if (data.symbol) {
+        document.getElementById('symbol-badge').textContent = '$' + data.symbol;
+        document.getElementById('info-symbol').textContent = '$' + data.symbol;
+      }
+
+      if (data.lastUpdated) {
+        const t = new Date(data.lastUpdated);
+        const ts = t.toLocaleTimeString('en-US', { hour12: false });
+        document.getElementById('info-updated').textContent = ts;
+        document.getElementById('last-update-bar').textContent = 'LAST UPDATE: ' + ts;
+      }
+
+      if (Array.isArray(data.trades) && data.trades.length > 0) {
+        updateTrades(data.trades);
+        updateVolume(data.trades);
+      }
+    }
+
+    // ─── Trade Stream ─────────────────────────────────────────
+    function updateTrades(trades) {
+      const list = document.getElementById('trade-list');
+      const noTrades = document.getElementById('no-trades');
+
+      if (trades.length === 0) return;
+      noTrades && noTrades.remove();
+
+      const newTrades = trades.filter(t => !knownTradeIds.has(t.id));
+      newTrades.forEach(t => knownTradeIds.add(t.id));
+
+      if (newTrades.length === 0) return;
+
+      const fragment = document.createDocumentFragment();
+      newTrades.slice(0, 20).forEach(trade => {
+        const row = document.createElement('div');
+        row.className = 'trade-row new ' + (trade.type === 'buy' ? 'is-buy' : 'is-sell');
+        row.innerHTML =
+          '<span class="trade-type ' + trade.type + '">' + trade.type.toUpperCase() + '</span>' +
+          '<span class="trade-wallet">' + trade.wallet + '</span>' +
+          '<span class="trade-sol ' + trade.type + '">' + trade.solAmount.toFixed(3) + ' SOL</span>' +
+          '<span class="trade-tokens">' + fmtNum(trade.tokenAmount) + ' T</span>' +
+          '<span class="trade-time">' + trade.timeStr + '</span>';
+        fragment.appendChild(row);
+        setTimeout(() => row.classList.remove('new'), 2000);
+      });
+
+      list.insertBefore(fragment, list.firstChild);
+
+      const rows = list.querySelectorAll('.trade-row');
+      for (let i = 80; i < rows.length; i++) rows[i].remove();
+
+      document.getElementById('trade-count').textContent = list.querySelectorAll('.trade-row').length + ' trades';
+    }
+
+    function updateVolume(trades) {
+      let buyVol = 0, sellVol = 0, buyCount = 0, sellCount = 0;
+      trades.forEach(t => {
+        if (t.type === 'buy') { buyVol += t.solAmount; buyCount++; }
+        else { sellVol += t.solAmount; sellCount++; }
+      });
+
+      document.getElementById('vol-buy').textContent = buyVol.toFixed(3) + ' SOL';
+      document.getElementById('vol-sell').textContent = sellVol.toFixed(3) + ' SOL';
+
+      const net = buyVol - sellVol;
+      const netEl = document.getElementById('vol-net');
+      netEl.textContent = (net >= 0 ? '+' : '') + net.toFixed(3) + ' SOL';
+      netEl.style.color = net >= 0 ? 'var(--buy)' : 'var(--sell)';
+
+      document.getElementById('vol-count').textContent = trades.length + ' trades';
+
+      const total = buyCount + sellCount;
+      if (total > 0) {
+        const buyPct = Math.round((buyCount / total) * 100);
+        document.getElementById('ratio-fill').style.width = buyPct + '%';
+        document.getElementById('ratio-buy-pct').textContent = buyPct + '%';
+        document.getElementById('ratio-sell-pct').textContent = (100 - buyPct) + '%';
+      }
+    }
+
+    // ─── SSE Connection ───────────────────────────────────────
+    function setConnStatus(state) {
+      const dot = document.getElementById('conn-dot');
+      const txt = document.getElementById('conn-text');
+      dot.className = 'conn-dot ' + state;
+      txt.textContent = { connected: 'CONNECTED', error: 'RECONNECTING', '': 'CONNECTING' }[state] || state.toUpperCase();
+    }
+
+    function connect() {
+      if (eventSource) eventSource.close();
+
+      eventSource = new EventSource('/api/stream');
+
+      eventSource.onopen = () => setConnStatus('connected');
+
+      eventSource.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'config') applyConfig(msg.data);
+          if (msg.type === 'update') updateStats(msg.data);
+        } catch (_) {}
+      };
+
+      eventSource.onerror = () => {
+        setConnStatus('error');
+        eventSource.close();
+        setTimeout(connect, 3000);
+      };
+    }
+
+    // ─── Init ─────────────────────────────────────────────────
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(cfg => applyConfig(cfg))
+      .catch(() => {})
+      .finally(() => connect());
+  </script>
+</body>
+</html>

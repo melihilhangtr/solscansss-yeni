@@ -1,0 +1,24 @@
+Sana yüklediğim proje dosyasının (RAR/ZIP) içeriğini arşivden çıkar, mevcut kod yapısını incele ve bu temel üzerine aşağıdaki tüm kritik güncellemeleri, güvenlik önlemlerini ve tasarım değişikliklerini sıfırdan uygulayarak sistemi ayağa kaldır:
+
+1. TELEMETRİ YÜKLENME VE BLOCK SORUNUNUN ÇÖZÜMÜ (BACKEND):
+   - Pump.fun ve Solana genel RPC'leri Replit sunucu IP'lerini engellediği için "Connecting to stream..." ve "Loading..." aşaması kilitleniyor.
+   - ÇÖZÜM: Engellenmeyen public Dexscreener API'sini kullan: https://api.dexscreener.com/latest/dex/tokens/[MINT_ADDRESS]
+   - Buradan gelen priceUsd ve fdv (Market Cap) verilerini ön yüze aktar. 
+   - Eğer API hata verir veya gecikirse backend ASLA çökmemeli; SSE (Server-Sent Events) bağlantısını koparmadan son başarılı veriyi veya mantıklı bir fallback verisini basarak ön yüzün kilitlenmesini engelle.
+   - Canlı trade akışı (stream) engelleniyorsa, Dexscreener'dan gelen hacme göre backend'de saniyede 1-2 tane BUY/SELL simülasyon işlemi üreterek stream'i sürekli akışta tut.
+   - HOLDERS sayısını da kilitlenen RPC yerine market cap ile oranlı dinamik bir algoritmayla besle.
+
+2. ADMİN PANELİ ŞİFRE KORUMASI (GÜVENLİK):
+   - /admin.html sayfasına ve admin API isteklerine (POST) kesin bir şifre koruması ekle.
+   - Giriş şifresi tam olarak şu olacak: 123123123qweqweqwe
+   - Bu şifre doğru girilmeden admin paneline erişilemeyecek, arayüz açılmayacak ve config.json değiştirilemeyecek.
+
+3. ARAYÜZ VE BOYUT GÜNCELLEMELERİ (UI CHANGES):
+   - DEXSCREENER CHART BOYUTU: Ana sayfadaki Dexscreener iframe grafik alanının boyutu (yüksekliği) tam YARI YARIYA KÜÇÜLTÜLSÜN (Yaklaşık 240px civarına çekilsin).
+   - COIN FOTOĞRAFI: Sol üstteki veya arayüzdeki Coin Logosu (Token Image) ÇOK DAHA BÜYÜK olacak şekilde yeniden boyutlandırılsın (w-12 h-12 gibi küçük boyutlar yerine en az w-28 h-28 veya w-32 h-32 yapılsın, ekranda devasa ve dikkat çekici dursun).
+
+4. DİNAMİK ARKA PLAN RENK UYUMU (COLOR MATCHING):
+   - Admin panelinden yüklenen arkaplan resminin (backgroundImageUrl) baskın rengi neyse, sitedeki telemetri panoları, holders tabloları, borderlar ve parlamalar (glow efektleri) o renkle otomatik eşleşmeli.
+   - Örnek: Kırmızı ağırlıklı bir resim yüklendiyse, tüm panel aksanları ve CSS '--primary' değişkeni kırmızı tonlarına bürünsün; mavi yüklendiyse mavi olsun. Sitenin tüm parçaları görsel olarak bir bütün halinde çalışsın. (Bunun için frontend'e hızlı bir renk çıkarma mantığı entegre edebilir veya dinamik CSS uygulayabilirsin).
+
+Yukarıdaki tüm maddeleri mevcut arşivdeki kodlara entegre et, gerekli npm paketlerini kur ve projeyi 'Run' ederek bana canlı linki teslim et.

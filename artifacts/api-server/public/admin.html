@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel · Token Telemetry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #08080f;
+      --bg-card: #0e0e1c;
+      --bg-input: #12121e;
+      --primary: #7c6df5;
+      --primary-hover: #9080ff;
+      --text: #c8c0e8;
+      --text-muted: #5a5080;
+      --border: rgba(124,109,245,0.2);
+      --border-focus: rgba(124,109,245,0.6);
+      --success: #22c55e;
+      --error: #ef4444;
+      --radius: 8px;
+      --radius-lg: 14px;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+    }
+
+    /* ── PASSWORD GATE ── */
+    #password-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gate-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .gate-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+    }
+
+    .gate-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .gate-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'Share Tech Mono', monospace;
+      margin-bottom: 28px;
+    }
+
+    .gate-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.05em;
+      outline: none;
+      margin-bottom: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      text-align: center;
+    }
+
+    .gate-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(124,109,245,0.12);
+    }
+
+    .gate-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .gate-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .gate-btn:active { transform: translateY(0); }
+
+    .gate-error {
+      margin-top: 12px;
+      font-size: 0.72rem;
+      color: var(--error);
+      letter-spacing: 0.05em;
+      min-height: 18px;
+    }
+
+    /* ── MAIN PAGE ── */
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 36px;
+    }
+
+    .page-header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.04em;
+    }
+
+    .page-header .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: all 0.2s;
+      font-family: 'Share Tech Mono', monospace;
+      letter-spacing: 0.06em;
+    }
+
+    .back-link:hover {
+      color: var(--primary);
+      border-color: var(--border-focus);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field { margin-bottom: 20px; }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+
+    .field-hint {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+      opacity: 0.7;
+    }
+
+    input[type="text"],
+    input[type="url"],
+    select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="url"]:focus,
+    select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(124,109,245,0.12);
+    }
+
+    input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .theme-option { position: relative; cursor: pointer; }
+
+    .theme-option input {
+      position: absolute;
+      opacity: 0;
+      width: 0; height: 0;
+    }
+
+    .theme-card {
+      border: 2px solid transparent;
+      border-radius: var(--radius);
+      padding: 14px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .theme-option input:checked + .theme-card {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary), 0 0 20px rgba(124,109,245,0.15);
+    }
+
+    .theme-card:hover { border-color: var(--border-focus); }
+
+    .theme-preview {
+      height: 50px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .theme-preview::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 100%);
+    }
+
+    .theme-preview.cyberpunk {
+      background: #03030a;
+      border: 1px solid rgba(0,245,255,0.4);
+      box-shadow: inset 0 0 20px rgba(0,245,255,0.1);
+    }
+    .theme-preview.cyberpunk::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+      background-size: 12px 12px;
+    }
+    .theme-preview.cyberpunk .preview-bar {
+      position: absolute;
+      bottom: 8px; left: 8px; right: 8px;
+      height: 3px;
+      background: linear-gradient(90deg, #ff00ff, #00f5ff);
+      border-radius: 2px;
+      box-shadow: 0 0 6px #00f5ff;
+    }
+    .theme-preview.cyberpunk .preview-dot {
+      position: absolute;
+      top: 8px; right: 8px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #39ff14;
+      box-shadow: 0 0 6px #39ff14;
+    }
+
+    .theme-preview.clean-tech {
+      background: #0e1118;
+      border: 1px solid rgba(59,130,246,0.35);
+    }
+    .theme-preview.clean-tech .preview-bar {
+      position: absolute;
+      bottom: 8px; left: 8px; right: 8px;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4);
+      border-radius: 2px;
+    }
+    .theme-preview.clean-tech .preview-dot {
+      position: absolute;
+      top: 8px; right: 8px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+
+    .theme-preview.gold {
+      background: #060503;
+      border: 1px solid rgba(232,180,0,0.35);
+    }
+    .theme-preview.gold::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(232,180,0,0.06) 0%, transparent 70%);
+    }
+    .theme-preview.gold .preview-bar {
+      position: absolute;
+      bottom: 8px; left: 8px; right: 8px;
+      height: 2px;
+      background: linear-gradient(90deg, #b8860b, #ffd700, #b8860b);
+      border-radius: 1px;
+    }
+    .theme-preview.gold .preview-dot {
+      position: absolute;
+      top: 8px; right: 8px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #ffd700;
+      box-shadow: 0 0 6px rgba(255,215,0,0.5);
+    }
+
+    .theme-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+
+    .theme-sub {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .theme-option[data-val="cyberpunk"] .theme-label { color: #00f5ff; }
+    .theme-option[data-val="clean-tech"] .theme-label { color: #3b82f6; }
+    .theme-option[data-val="gold"] .theme-label { color: #e8b400; }
+
+    .preview-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+    }
+
+    .preview-img {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+
+    .preview-info { flex: 1; min-width: 0; }
+
+    .preview-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-ca {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      font-family: 'Share Tech Mono', monospace;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    button[type="submit"] {
+      padding: 12px 28px;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    button[type="submit"]:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(124,109,245,0.35); }
+    button[type="submit"]:active { transform: translateY(0); }
+    button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--success); color: var(--success); }
+    #toast.error { border-color: var(--error); color: var(--error); }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 50px;
+      font-size: 0.65rem;
+      color: #22c55e;
+      letter-spacing: 0.1em;
+      background: rgba(34,197,94,0.05);
+    }
+
+    .live-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: blink 1.2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── PASSWORD GATE ── -->
+  <div id="password-gate">
+    <div class="gate-card">
+      <div class="gate-icon">🔐</div>
+      <div class="gate-title">ADMIN ACCESS</div>
+      <div class="gate-sub">Enter admin password to continue</div>
+      <input
+        type="password"
+        id="gate-input"
+        class="gate-input"
+        placeholder="••••••••••••••••••••"
+        autocomplete="current-password"
+      />
+      <button class="gate-btn" id="gate-btn" onclick="checkPassword()">UNLOCK</button>
+      <div class="gate-error" id="gate-error"></div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CONTENT (hidden until unlocked) ── -->
+  <div class="page" id="main-content" style="display:none">
+    <div class="page-header">
+      <div>
+        <h1>⚙ ADMIN PANEL</h1>
+        <div class="subtitle">Token Telemetry Configuration</div>
+      </div>
+      <a href="/api/" class="back-link">← LIVE VIEW</a>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Current Configuration Preview</div>
+      <div class="preview-row">
+        <img class="preview-img" id="prev-img" src="" alt="" onerror="this.style.display='none'" />
+        <div class="preview-info">
+          <div class="preview-name" id="prev-name">Loading...</div>
+          <div class="preview-ca" id="prev-ca">Loading mint address...</div>
+        </div>
+        <div class="live-badge">LIVE</div>
+      </div>
+    </div>
+
+    <form id="config-form">
+      <div class="card">
+        <div class="card-title">Token Configuration</div>
+
+        <div class="field">
+          <label for="mintAddress">Mint Address (CA)</label>
+          <input type="text" id="mintAddress" name="mintAddress"
+            placeholder="e.g. 9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump" />
+          <div class="field-hint">The contract address of the token to track (Solana mint address).</div>
+        </div>
+
+        <div class="field">
+          <label for="tokenName">Token Name</label>
+          <input type="text" id="tokenName" name="tokenName"
+            placeholder="e.g. Fartcoin, Bonk, WIF..." />
+        </div>
+
+        <div class="field">
+          <label for="tokenImageUrl">Token Logo URL</label>
+          <input type="url" id="tokenImageUrl" name="tokenImageUrl"
+            placeholder="https://..." />
+          <div class="field-hint">Direct URL to the token logo image (PNG/JPG/GIF).</div>
+        </div>
+
+        <div class="field">
+          <label for="backgroundImageUrl">Background Image URL</label>
+          <input type="url" id="backgroundImageUrl" name="backgroundImageUrl"
+            placeholder="https://... (optional)" />
+          <div class="field-hint">Background image for the main page. Its dominant color will be applied to all panels and borders automatically.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Site Design / Theme</div>
+
+        <div class="theme-grid">
+          <label class="theme-option" data-val="cyberpunk">
+            <input type="radio" name="siteDesign" value="cyberpunk" />
+            <div class="theme-card">
+              <div class="theme-preview cyberpunk">
+                <div class="preview-bar"></div>
+                <div class="preview-dot"></div>
+              </div>
+              <div class="theme-label">CYBERPUNK</div>
+              <div class="theme-sub">Neon · Monospace · Grid</div>
+            </div>
+          </label>
+
+          <label class="theme-option" data-val="clean-tech">
+            <input type="radio" name="siteDesign" value="clean-tech" />
+            <div class="theme-card">
+              <div class="theme-preview clean-tech">
+                <div class="preview-bar"></div>
+                <div class="preview-dot"></div>
+              </div>
+              <div class="theme-label">CLEAN TECH</div>
+              <div class="theme-sub">Minimal · Blue · Sans</div>
+            </div>
+          </label>
+
+          <label class="theme-option" data-val="gold">
+            <input type="radio" name="siteDesign" value="gold" />
+            <div class="theme-card">
+              <div class="theme-preview gold">
+                <div class="preview-bar"></div>
+                <div class="preview-dot"></div>
+              </div>
+              <div class="theme-label">GOLD PREMIUM</div>
+              <div class="theme-sub">Luxury · Amber · Serif</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button type="submit" id="save-btn">SAVE & APPLY</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    let adminPassword = '';
+    let currentConfig = {};
+
+    // ── Password Gate ──────────────────────────────────────────
+    function checkPassword() {
+      const input = document.getElementById('gate-input').value;
+      const errorEl = document.getElementById('gate-error');
+      if (!input) {
+        errorEl.textContent = 'Please enter the admin password.';
+        return;
+      }
+      // Verify against backend by attempting a config fetch with the password
+      // We use a lightweight probe: attempt to load config with the password in a header.
+      // For admin panel access we use the password stored in JS, then send it with all POST requests.
+      const CORRECT = '123123123qweqweqwe';
+      if (input === CORRECT) {
+        adminPassword = input;
+        document.getElementById('password-gate').style.display = 'none';
+        document.getElementById('main-content').style.display = '';
+        loadConfig();
+      } else {
+        errorEl.textContent = 'Incorrect password. Access denied.';
+        document.getElementById('gate-input').value = '';
+        document.getElementById('gate-input').focus();
+        document.getElementById('gate-input').style.borderColor = 'var(--error)';
+        setTimeout(() => {
+          document.getElementById('gate-input').style.borderColor = '';
+          errorEl.textContent = '';
+        }, 2500);
+      }
+    }
+
+    document.getElementById('gate-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') checkPassword();
+    });
+
+    // ── Toast ──────────────────────────────────────────────────
+    function showToast(msg, type) {
+      type = type || 'success';
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'show ' + type;
+      setTimeout(() => { t.className = ''; }, 3000);
+    }
+
+    // ── Form Population ────────────────────────────────────────
+    function populateForm(cfg) {
+      currentConfig = cfg;
+      document.getElementById('mintAddress').value = cfg.mintAddress || '';
+      document.getElementById('tokenName').value = cfg.tokenName || '';
+      document.getElementById('tokenImageUrl').value = cfg.tokenImageUrl || '';
+      document.getElementById('backgroundImageUrl').value = cfg.backgroundImageUrl || '';
+
+      const radio = document.querySelector('input[name="siteDesign"][value="' + cfg.siteDesign + '"]');
+      if (radio) radio.checked = true;
+      updatePreview(cfg);
+    }
+
+    function updatePreview(cfg) {
+      document.getElementById('prev-name').textContent = cfg.tokenName || 'Unknown Token';
+      const ca = cfg.mintAddress || '';
+      document.getElementById('prev-ca').textContent = ca ? ca.slice(0,12) + '…' + ca.slice(-12) : '—';
+      const img = document.getElementById('prev-img');
+      if (cfg.tokenImageUrl) {
+        img.src = cfg.tokenImageUrl;
+        img.style.display = '';
+      } else {
+        img.style.display = 'none';
+      }
+    }
+
+    // ── Live Preview ───────────────────────────────────────────
+    document.getElementById('tokenName').addEventListener('input', function(e) {
+      document.getElementById('prev-name').textContent = e.target.value || 'Unknown Token';
+    });
+    document.getElementById('mintAddress').addEventListener('input', function(e) {
+      const ca = e.target.value;
+      document.getElementById('prev-ca').textContent = ca ? (ca.length > 24 ? ca.slice(0,12) + '…' + ca.slice(-12) : ca) : '—';
+    });
+    document.getElementById('tokenImageUrl').addEventListener('input', function(e) {
+      const img = document.getElementById('prev-img');
+      if (e.target.value) {
+        img.src = e.target.value;
+        img.style.display = '';
+      } else {
+        img.style.display = 'none';
+      }
+    });
+
+    // ── Form Submit ────────────────────────────────────────────
+    document.getElementById('config-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      btn.textContent = 'SAVING...';
+
+      const design = document.querySelector('input[name="siteDesign"]:checked');
+      const payload = {
+        mintAddress: document.getElementById('mintAddress').value.trim(),
+        tokenName: document.getElementById('tokenName').value.trim(),
+        tokenImageUrl: document.getElementById('tokenImageUrl').value.trim(),
+        backgroundImageUrl: document.getElementById('backgroundImageUrl').value.trim(),
+        siteDesign: design ? design.value : 'cyberpunk',
+      };
+
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-password': adminPassword,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✓ Configuration saved & applied!', 'success');
+          currentConfig = data.config;
+          updatePreview(data.config);
+        } else if (res.status === 401) {
+          showToast('Access denied — wrong password', 'error');
+        } else {
+          showToast('Failed to save config', 'error');
+        }
+      } catch (_) {
+        showToast('Network error – check server', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'SAVE & APPLY';
+      }
+    });
+
+    // ── Load Config ────────────────────────────────────────────
+    function loadConfig() {
+      fetch('/api/config')
+        .then(function(r) { return r.json(); })
+        .then(function(cfg) { populateForm(cfg); })
+        .catch(function() { showToast('Could not load config', 'error'); });
+    }
+  </script>
+</body>
+</html>

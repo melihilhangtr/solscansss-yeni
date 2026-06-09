@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Token Telemetry"
+version = "1.0.0"
+id = "artifacts/telemetry"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21715
+
+[services.development]
+run = "pnpm --filter @workspace/telemetry run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/telemetry", "run", "build" ]
+publicDir = "artifacts/telemetry/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21715"
+BASE_PATH = "/"

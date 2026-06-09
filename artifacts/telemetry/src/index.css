@@ -1,0 +1,251 @@
+@import "tailwindcss";
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #03030a;
+  --bg-card: #080814;
+  --bg-card2: #0c0c1c;
+  --primary: #00f5ff;
+  --secondary: #ff00ff;
+  --accent: #39ff14;
+  --text: #c0e8ff;
+  --text-dim: #5070a0;
+  --border: rgba(0,245,255,0.18);
+  --border-glow: rgba(0,245,255,0.5);
+  --buy: #39ff14;
+  --sell: #ff0055;
+  --buy-bg: rgba(57,255,20,0.08);
+  --sell-bg: rgba(255,0,85,0.08);
+  --shadow: 0 0 30px rgba(0,245,255,0.1);
+  --font: 'Share Tech Mono', 'Courier New', monospace;
+  --font-num: 'Share Tech Mono', monospace;
+  --radius: 3px;
+  --radius-lg: 5px;
+  --glow: 0 0 8px var(--primary), 0 0 20px rgba(0,245,255,0.25);
+  --glow-buy: 0 0 8px rgba(57,255,20,0.6);
+  --glow-sell: 0 0 8px rgba(255,0,85,0.6);
+  --scanner-color: rgba(0,245,255,0.04);
+}
+
+body.theme-clean-tech {
+  --bg: #0c1019; --bg-card: #131a27; --bg-card2: #192133;
+  --primary: #3b82f6; --secondary: #06b6d4; --accent: #a78bfa;
+  --text: #dde6f5; --text-dim: #566a8a;
+  --border: rgba(59,130,246,0.2); --border-glow: rgba(59,130,246,0.5);
+  --buy: #22c55e; --sell: #ef4444;
+  --buy-bg: rgba(34,197,94,0.08); --sell-bg: rgba(239,68,68,0.08);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --font: 'Inter', -apple-system, sans-serif; --font-num: 'Inter', monospace;
+  --radius: 10px; --radius-lg: 16px;
+  --glow: none; --glow-buy: none; --glow-sell: none; --scanner-color: transparent;
+}
+
+body.theme-gold {
+  --bg: #060503; --bg-card: #0e0b06; --bg-card2: #14100a;
+  --primary: #e8b400; --secondary: #b8860b; --accent: #ff8c00;
+  --text: #f0e0b0; --text-dim: #7a6040;
+  --border: rgba(232,180,0,0.18); --border-glow: rgba(232,180,0,0.45);
+  --buy: #00e676; --sell: #ff1744;
+  --buy-bg: rgba(0,230,118,0.08); --sell-bg: rgba(255,23,68,0.08);
+  --shadow: 0 0 40px rgba(232,180,0,0.07);
+  --font: 'Playfair Display', Georgia, serif; --font-num: 'Inter', monospace;
+  --radius: 4px; --radius-lg: 8px;
+  --glow: 0 0 12px rgba(232,180,0,0.3); --glow-buy: none; --glow-sell: none;
+  --scanner-color: rgba(232,180,0,0.025);
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow-x: hidden;
+  transition: background-color 0.5s, color 0.5s;
+}
+
+.bg-layer {
+  position: fixed; inset: 0; z-index: 0;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  opacity: 0.12; transition: opacity 0.6s, background-image 0.6s; pointer-events: none;
+}
+
+.grid-layer {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(var(--scanner-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--scanner-color) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+#app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 32px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-card) 0%, transparent 100%);
+  backdrop-filter: blur(8px);
+}
+
+.header-left { display: flex; align-items: center; gap: 18px; }
+
+#token-logo {
+  width: 120px; height: 120px; border-radius: 50%;
+  border: 3px solid var(--border); object-fit: cover;
+  background: var(--bg-card2); transition: border-color 0.4s, box-shadow 0.4s;
+  flex-shrink: 0; box-shadow: var(--glow);
+}
+body.theme-clean-tech #token-logo { box-shadow: none; }
+
+.token-info h1 {
+  font-size: 1.4rem; font-weight: 700; color: var(--primary);
+  letter-spacing: 0.08em; text-transform: uppercase; text-shadow: var(--glow);
+}
+.token-info .token-mint { font-size: 0.65rem; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; letter-spacing: 0.03em; margin-top: 2px; }
+
+.header-badges { display: flex; align-items: center; gap: 10px; }
+
+.badge {
+  display: flex; align-items: center; gap: 5px; padding: 5px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-dim); background: var(--bg-card);
+}
+.badge.live { color: var(--accent); border-color: var(--accent); animation: pulse-border 2s infinite; }
+body.theme-clean-tech .badge.live { animation: none; }
+
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: blink 1.2s ease-in-out infinite; }
+
+.admin-link {
+  padding: 7px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 0.72rem; color: var(--text-dim); text-decoration: none;
+  letter-spacing: 0.08em; text-transform: uppercase; background: var(--bg-card);
+  transition: all 0.25s; font-family: var(--font);
+}
+.admin-link:hover { border-color: var(--primary); color: var(--primary); box-shadow: var(--glow); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 24px 32px 0; }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .stats-grid { grid-template-columns: 1fr; } header { padding: 14px 16px; } .stats-grid { padding: 16px 16px 0; } #token-logo { width: 72px; height: 72px; } }
+
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 22px;
+  transition: border-color 0.3s, box-shadow 0.3s; position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  opacity: 0.4;
+}
+.stat-card:hover { border-color: var(--border-glow); box-shadow: var(--shadow); }
+.stat-label { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+.stat-value { font-size: 1.9rem; font-weight: 700; color: var(--primary); font-family: var(--font-num); letter-spacing: 0.02em; transition: color 0.4s; text-shadow: var(--glow); line-height: 1; }
+body.theme-clean-tech .stat-value { text-shadow: none; }
+.stat-sub { font-size: 0.68rem; color: var(--text-dim); margin-top: 6px; }
+
+.bonding-bar { height: 4px; background: var(--bg-card2); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.bonding-fill { height: 100%; background: linear-gradient(90deg, var(--secondary), var(--primary)); border-radius: 2px; transition: width 1s ease; box-shadow: 0 0 8px var(--primary); }
+body.theme-clean-tech .bonding-fill { box-shadow: none; }
+
+.chart-section { padding: 16px 32px; }
+.chart-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+body.theme-clean-tech .chart-panel { box-shadow: none; }
+.chart-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg-card2); }
+.panel-title { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+.panel-title .chart-dot { background: var(--primary); animation: blink 1.8s ease-in-out infinite; }
+.chart-ext-link {
+  display: flex; align-items: center; gap: 5px; font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-dim); text-decoration: none;
+  padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: 'Share Tech Mono', monospace; transition: all 0.2s;
+}
+.chart-ext-link:hover { color: var(--primary); border-color: var(--border-glow); box-shadow: var(--glow); }
+
+.chart-iframe-wrap { position: relative; height: 240px; background: var(--bg); }
+.chart-corner { position: absolute; width: 14px; height: 14px; z-index: 3; pointer-events: none; }
+.chart-corner.tl { top: 0; left: 0; border-top: 2px solid var(--primary); border-left: 2px solid var(--primary); }
+.chart-corner.tr { top: 0; right: 0; border-top: 2px solid var(--primary); border-right: 2px solid var(--primary); }
+.chart-corner.bl { bottom: 0; left: 0; border-bottom: 2px solid var(--primary); border-left: 2px solid var(--primary); }
+.chart-corner.br { bottom: 0; right: 0; border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary); }
+body.theme-clean-tech .chart-corner { display: none; }
+#dex-iframe { width: 100%; height: 100%; border: none; display: block; position: relative; z-index: 1; }
+
+.chart-loading {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  background: var(--bg-card); transition: opacity 0.5s, visibility 0.5s;
+}
+.chart-loading.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.chart-loading-spinner { width: 36px; height: 36px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.chart-loading-text { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+
+.main-content { flex: 1; display: grid; grid-template-columns: 1fr 380px; gap: 16px; padding: 0 32px 32px; }
+@media (max-width: 1100px) { .main-content { grid-template-columns: 1fr; } }
+
+.trade-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--bg-card2); }
+.panel-title .trade-dot { background: var(--buy); }
+.trade-count { font-size: 0.65rem; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; }
+
+.trade-list { flex: 1; overflow-y: auto; max-height: 520px; padding: 6px 0; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.trade-list::-webkit-scrollbar { width: 4px; }
+.trade-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.trade-row {
+  display: grid; grid-template-columns: 52px 1fr 90px 80px 60px;
+  align-items: center; padding: 8px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  gap: 8px; animation: slideIn 0.35s ease-out; transition: background 0.2s;
+}
+.trade-row.is-buy { background: var(--buy-bg); }
+.trade-row.is-sell { background: var(--sell-bg); }
+.trade-row:hover { background: var(--bg-card2); }
+
+.trade-type { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; padding: 3px 7px; border-radius: var(--radius); text-align: center; font-family: 'Share Tech Mono', monospace; }
+.trade-type.buy { color: var(--buy); background: var(--buy-bg); border: 1px solid rgba(57,255,20,0.25); text-shadow: var(--glow-buy); }
+.trade-type.sell { color: var(--sell); background: var(--sell-bg); border: 1px solid rgba(255,0,85,0.25); text-shadow: var(--glow-sell); }
+.trade-wallet { font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trade-sol { font-family: var(--font-num); font-size: 0.78rem; font-weight: 600; text-align: right; }
+.trade-sol.buy { color: var(--buy); }
+.trade-sol.sell { color: var(--sell); }
+.trade-tokens { font-family: var(--font-num); font-size: 0.65rem; color: var(--text-dim); text-align: right; }
+.trade-time { font-family: 'Share Tech Mono', monospace; font-size: 0.62rem; color: var(--text-dim); text-align: right; }
+.no-trades { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--text-dim); font-size: 0.75rem; letter-spacing: 0.1em; }
+
+.side-panel { display: flex; flex-direction: column; gap: 16px; }
+.info-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.info-card h3 { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px; }
+.info-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.info-row:last-child { border-bottom: none; }
+.info-key { font-size: 0.68rem; color: var(--text-dim); letter-spacing: 0.06em; }
+.info-val { font-family: var(--font-num); font-size: 0.78rem; color: var(--text); font-weight: 600; }
+
+.buy-sell-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.buy-sell-card h3 { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px; }
+.ratio-bar { height: 8px; border-radius: 4px; background: var(--bg-card2); overflow: hidden; margin-bottom: 10px; }
+.ratio-fill-buy { height: 100%; background: var(--buy); border-radius: 4px 0 0 4px; transition: width 0.8s ease; box-shadow: var(--glow-buy); }
+body.theme-clean-tech .ratio-fill-buy { box-shadow: none; }
+.ratio-labels { display: flex; justify-content: space-between; font-size: 0.68rem; }
+.ratio-buy { color: var(--buy); }
+.ratio-sell { color: var(--sell); }
+
+.status-bar {
+  padding: 8px 32px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.62rem; color: var(--text-dim); font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.08em; background: var(--bg-card);
+}
+.conn-status { display: flex; align-items: center; gap: 6px; }
+.conn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); transition: background 0.3s; }
+.conn-dot.connected { background: var(--buy); }
+.conn-dot.error { background: var(--sell); }
+
+.symbol-badge { font-size: 0.72rem; color: var(--primary); border: 1px solid var(--border); padding: 3px 10px; border-radius: var(--radius); font-family: 'Share Tech Mono', monospace; background: var(--bg-card); margin-top: 5px; display: inline-block; }
+
+@keyframes slideIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@keyframes pulse-border { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 8px var(--accent); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes countUp { from { opacity: 0.4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.updated { animation: countUp 0.4s ease-out; }
