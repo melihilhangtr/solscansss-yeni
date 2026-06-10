@@ -4,6 +4,9 @@ modules = ["nodejs-24"]
 router = "application"
 deploymentTarget = "autoscale"
 
+[deployment.preBuild]
+args = ["pnpm", "install"]
+
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]
 env = { "CI" = "true" }
